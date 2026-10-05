@@ -138,3 +138,40 @@ async def identify_plant(
             status_code=500,
             detail="Nao foi possivel classificar a imagem.",
         ) from exc
+
+
+@router.get("/catalog")
+async def get_catalog() -> dict[str, object]:
+    """Retorna o catálogo completo de cuidados com as plantas, acelerado por cache Redis."""
+    from ecoscan.aws.cache import get_cache, set_cache
+    from ecoscan.plant_catalog import PLANT_CARE_CATALOG
+
+    cache_key = "plants:catalog"
+    cached = await get_cache(cache_key)
+    if cached is not None:
+        return {"source": "cache", "catalog": cached}
+
+    await set_cache(cache_key, PLANT_CARE_CATALOG, ttl_seconds=86400)
+    return {"source": "database", "catalog": PLANT_CARE_CATALOG}
+
+
+@router.get("/catalog/{slug}")
+async def get_catalog_item(slug: str) -> dict[str, object]:
+    """Retorna o guia botânico de uma espécie específica com cache Redis."""
+    from ecoscan.aws.cache import get_cache, set_cache
+    from ecoscan.plant_catalog import get_plant_care_guide
+
+    cache_key = f"plants:catalog:{slug.lower()}"
+    cached = await get_cache(cache_key)
+    if cached is not None:
+        return {"source": "cache", "plant": cached}
+
+    guide = get_plant_care_guide(slug)
+    if guide is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Guia botânico para a espécie '{slug}' não encontrado.",
+        )
+
+    await set_cache(cache_key, guide, ttl_seconds=86400)
+    return {"source": "database", "plant": guide}

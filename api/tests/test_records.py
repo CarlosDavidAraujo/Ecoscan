@@ -82,7 +82,8 @@ class RecordRouteTests(IsolatedAsyncioTestCase):
 
         self.assertEqual(response.plant_name, "Mangueira")
         self.assertEqual(response.confidence, 0.93)
-        self.assertEqual(response.image_url, f"/history/{response.id}/image")
+        self.assertTrue(response.image_url)
+        self.assertTrue(response.thumbnail_url)
         self.assertEqual(session.records[0].image_data, b"fake-image")
         self.assertEqual(session.records[0].user_id, user.id)
         self.assertTrue(session.records[0].in_library)

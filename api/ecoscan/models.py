@@ -58,8 +58,10 @@ class Identification:
     plant_slug: Mapped[str | None] = mapped_column(nullable=True)
     confidence: Mapped[float] = mapped_column(nullable=False)
     recognized: Mapped[bool] = mapped_column(nullable=False)
-    image_data: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
+    image_url: Mapped[str] = mapped_column(nullable=False, default="")
+    thumbnail_url: Mapped[str | None] = mapped_column(nullable=True, default=None)
     image_content_type: Mapped[str] = mapped_column(nullable=False)
+    image_data: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True, default=None)
     user_id: Mapped[UUID] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"),
         index=True,

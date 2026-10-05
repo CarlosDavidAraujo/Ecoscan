@@ -26,3 +26,14 @@ class Settings(BaseSettings):
     SMTP_USE_TLS: bool = True
     SMTP_USE_SSL: bool = False
     IMAGE_RETENTION_DAYS: int = 90
+
+    # Configurações AWS
+    AWS_REGION: str = "us-east-1"
+    AWS_ACCESS_KEY_ID: str | None = None
+    AWS_SECRET_ACCESS_KEY: str | None = None
+    AWS_S3_BUCKET_NAME: str | None = None
+    AWS_S3_ENDPOINT_URL: str | None = None
+
+    # Configurações ElastiCache / Redis
+    REDIS_URL: str = "redis://localhost:6379/0"
+    REDIS_ENABLED: bool = True

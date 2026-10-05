@@ -68,3 +68,4 @@ class IdentificationResponseSchema(BaseModel):
     created_at: datetime
     in_library: bool
     image_url: str
+    thumbnail_url: str | None = None

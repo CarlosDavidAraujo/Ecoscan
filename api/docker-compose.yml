@@ -30,7 +30,7 @@ services:
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgresql+psycopg://postgres:${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD em api/.env}@db:5432/ecoscan
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://postgres:${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD em api/.env}@db:5432/ecoscan}
       ECOSCAN_MODEL_PATH: /app/ecoscan/best.pt
       ECOSCAN_METADATA_PATH: /app/ecoscan/model_metadata.json
       PASSWORD_RESET_EXPOSE_TOKEN: ${PASSWORD_RESET_EXPOSE_TOKEN:-true}
