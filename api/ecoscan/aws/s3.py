@@ -28,6 +28,8 @@ def get_s3_client() -> Any | None:
         if _settings.AWS_ACCESS_KEY_ID and _settings.AWS_SECRET_ACCESS_KEY:
             client_kwargs["aws_access_key_id"] = _settings.AWS_ACCESS_KEY_ID
             client_kwargs["aws_secret_access_key"] = _settings.AWS_SECRET_ACCESS_KEY
+        if _settings.AWS_SESSION_TOKEN:
+            client_kwargs["aws_session_token"] = _settings.AWS_SESSION_TOKEN
         if _settings.AWS_S3_ENDPOINT_URL:
             client_kwargs["endpoint_url"] = _settings.AWS_S3_ENDPOINT_URL
 

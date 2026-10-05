@@ -31,6 +31,7 @@ class Settings(BaseSettings):
     AWS_REGION: str = "us-east-1"
     AWS_ACCESS_KEY_ID: str | None = None
     AWS_SECRET_ACCESS_KEY: str | None = None
+    AWS_SESSION_TOKEN: str | None = None
     AWS_S3_BUCKET_NAME: str | None = None
     AWS_S3_ENDPOINT_URL: str | None = None
 
