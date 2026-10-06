@@ -35,6 +35,9 @@ class Settings(BaseSettings):
     AWS_S3_BUCKET_NAME: str | None = None
     AWS_S3_ENDPOINT_URL: str | None = None
 
-    # Configurações ElastiCache / Redis
+    # Configurações ElastiCache / Redis / Valkey
     REDIS_URL: str = "redis://localhost:6379/0"
+    REDIS_HOST: str | None = None
+    REDIS_PORT: int = 6379
+    REDIS_USE_TLS: bool = True
     REDIS_ENABLED: bool = True
