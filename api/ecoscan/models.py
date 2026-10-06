@@ -99,3 +99,23 @@ class PasswordResetToken:
         init=False,
     )
     id: Mapped[UUID] = mapped_column(primary_key=True, default_factory=uuid4)
+
+
+@mapped_as_dataclass(table_registry)
+class CatalogSpecies:
+    __tablename__ = "catalog_species"
+
+    slug: Mapped[str] = mapped_column(unique=True, index=True, nullable=False)
+    common_name: Mapped[str] = mapped_column(nullable=False)
+    scientific_name: Mapped[str] = mapped_column(nullable=False)
+    family: Mapped[str] = mapped_column(nullable=False)
+    origin: Mapped[str] = mapped_column(nullable=False)
+    abundance: Mapped[str] = mapped_column(nullable=False)
+    description: Mapped[str] = mapped_column(nullable=False)
+    sunlight: Mapped[str] = mapped_column(nullable=False)
+    watering: Mapped[str] = mapped_column(nullable=False)
+    fertilizing: Mapped[str] = mapped_column(nullable=False)
+    soil: Mapped[str] = mapped_column(nullable=False)
+    climate: Mapped[str] = mapped_column(nullable=False)
+    pruning: Mapped[str] = mapped_column(nullable=False)
+    id: Mapped[UUID] = mapped_column(primary_key=True, default_factory=uuid4)
