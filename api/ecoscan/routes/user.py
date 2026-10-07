@@ -6,6 +6,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ecoscan.aws.dynamodb import record_audit_log
 from ecoscan.database import get_session
 from ecoscan.models import User
 from ecoscan.schemas import (
@@ -53,6 +54,14 @@ async def create_user(user: UserSchema, session: Session) -> User:
     session.add(new_user)
     await session.commit()
     await session.refresh(new_user)
+
+    await record_audit_log(
+        action="USER_REGISTER",
+        user_id=str(new_user.id),
+        resource="users",
+        details={"name": new_user.name, "email": new_user.email},
+    )
+
     return new_user
 
 

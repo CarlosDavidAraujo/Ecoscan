@@ -41,3 +41,8 @@ class Settings(BaseSettings):
     REDIS_PORT: int = 6379
     REDIS_USE_TLS: bool = True
     REDIS_ENABLED: bool = True
+
+    # Configurações DynamoDB (Auditoria e Logs)
+    DYNAMODB_TABLE_NAME: str = "ecoscan_audit_logs"
+    DYNAMODB_ENABLED: bool = True
+    DYNAMODB_ENDPOINT_URL: str | None = None

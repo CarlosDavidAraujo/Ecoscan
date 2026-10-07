@@ -90,7 +90,21 @@ def create_app(
             "identify": "/plants/identify",
             "history": "/history",
             "library": "/library",
+            "audit_logs": "/audit/logs",
             "documentation": "/docs",
+        }
+
+    @app.get("/audit/logs", tags=["audit"])
+    async def get_audit_logs(limit: int = 50) -> dict[str, object]:
+        """Retorna os logs de auditoria recentes armazenados no Amazon DynamoDB."""
+        from ecoscan.aws.dynamodb import list_audit_logs
+
+        logs = await list_audit_logs(limit=limit)
+        return {
+            "source": "Amazon DynamoDB",
+            "table": getattr(Settings(), "DYNAMODB_TABLE_NAME", "ecoscan_audit_logs"),
+            "count": len(logs),
+            "logs": logs,
         }
 
     return app

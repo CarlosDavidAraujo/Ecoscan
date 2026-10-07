@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ecoscan.aws.cache import delete_cache, get_cache, set_cache
+from ecoscan.aws.dynamodb import record_audit_log
 from ecoscan.aws.s3 import create_thumbnail, delete_from_s3, upload_to_s3
 from ecoscan.database import get_session
 from ecoscan.models import Identification, User
@@ -139,6 +140,22 @@ async def create_history_record(
     if add_to_library:
         await delete_cache(f"user_library:{current_user.id}")
 
+    # 3. Auditoria NoSQL no DynamoDB
+    await record_audit_log(
+        action="HISTORY_CREATE",
+        user_id=str(current_user.id),
+        resource="history",
+        details={
+            "record_id": str(record.id),
+            "plant_name": record.plant_name,
+            "plant_slug": record.plant_slug,
+            "confidence": record.confidence,
+            "recognized": record.recognized,
+            "in_library": record.in_library,
+            "image_url": record.image_url,
+        },
+    )
+
     return _serialize(record)
 
 
@@ -209,6 +226,18 @@ async def delete_history_record(
     # Invalidação de Cache
     await delete_cache(f"user_history:{current_user.id}")
     await delete_cache(f"user_library:{current_user.id}")
+
+    # Auditoria NoSQL no DynamoDB
+    await record_audit_log(
+        action="HISTORY_DELETE",
+        user_id=str(current_user.id),
+        resource="history",
+        details={
+            "record_id": str(identification_id),
+            "plant_name": record.plant_name,
+        },
+    )
+
     return Response(status_code=HTTPStatus.NO_CONTENT)
 
 
@@ -258,6 +287,18 @@ async def add_to_library(
     await session.refresh(record)
 
     await delete_cache(f"user_library:{current_user.id}")
+
+    # Auditoria NoSQL no DynamoDB
+    await record_audit_log(
+        action="LIBRARY_ADD",
+        user_id=str(current_user.id),
+        resource="library",
+        details={
+            "record_id": str(record.id),
+            "plant_name": record.plant_name,
+        },
+    )
+
     return _serialize(record)
 
 
@@ -276,4 +317,16 @@ async def remove_from_library(
     await session.commit()
 
     await delete_cache(f"user_library:{current_user.id}")
+
+    # Auditoria NoSQL no DynamoDB
+    await record_audit_log(
+        action="LIBRARY_REMOVE",
+        user_id=str(current_user.id),
+        resource="library",
+        details={
+            "record_id": str(record.id),
+            "plant_name": record.plant_name,
+        },
+    )
+
     return Response(status_code=HTTPStatus.NO_CONTENT)
