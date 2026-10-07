@@ -89,15 +89,27 @@ def _put_audit_item_sync(item: dict[str, Any]) -> bool:
     """Grava o registro de auditoria no DynamoDB de forma síncrona."""
     resource = get_dynamodb_resource()
     if resource is None:
+        logger.warning("Recurso DynamoDB não inicializado (verifique DYNAMODB_ENABLED e credenciais AWS).")
         return False
 
     try:
         table = resource.Table(_settings.DYNAMODB_TABLE_NAME)
         table.put_item(Item=item)
-        logger.info(f"Log de auditoria registrado no DynamoDB: {item.get('action')} - {item.get('log_id')}")
+        logger.info(f"Log registrado no DynamoDB: {item.get('action')} - {item.get('log_id')}")
         return True
     except Exception as exc:
-        logger.warning(f"Falha ao registrar log no DynamoDB ({item.get('action')}): {exc}")
+        err_str = str(exc)
+        logger.warning(f"Falha ao registrar log no DynamoDB ({item.get('action')}): {err_str}")
+        if "ResourceNotFoundException" in err_str or "Cannot do operations on a non-existent table" in err_str:
+            logger.info("Tabela não encontrada no DynamoDB. Tentando criar...")
+            if ensure_table_exists():
+                try:
+                    table = resource.Table(_settings.DYNAMODB_TABLE_NAME)
+                    table.put_item(Item=item)
+                    logger.info(f"Log gravado após criação da tabela: {item.get('action')}")
+                    return True
+                except Exception as retry_exc:
+                    logger.warning(f"Falha ao tentar regravar após criação da tabela: {retry_exc}")
         return False
 
 
@@ -142,11 +154,16 @@ def _scan_audit_logs_sync(limit: int = 50) -> list[dict[str, Any]]:
         response = table.scan(Limit=limit)
         items = response.get("Items", [])
         # Ordena pelo timestamp decrescente
-        items.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
+        items.sort(key=lambda x: str(x.get("timestamp", "")), reverse=True)
         return items
     except Exception as exc:
-        logger.warning(f"Erro ao consultar logs de auditoria no DynamoDB: {exc}")
-        return []
+        err_str = str(exc)
+        if "ResourceNotFoundException" in err_str or "Cannot do operations on a non-existent table" in err_str:
+            logger.info("Tabela de auditoria não encontrada no DynamoDB. Tentando criar agora...")
+            ensure_table_exists()
+            return []
+        logger.error(f"Erro ao consultar logs de auditoria no DynamoDB: {exc}")
+        raise exc
 
 
 async def list_audit_logs(limit: int = 50) -> list[dict[str, Any]]:

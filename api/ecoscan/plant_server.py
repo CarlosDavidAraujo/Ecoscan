@@ -51,6 +51,14 @@ def create_app(
             app.state.plant_classifier_error = str(exc)
             logger.warning("Classificador indisponivel: %s", exc)
 
+        # Garante que a tabela de auditoria DynamoDB esteja pronta
+        try:
+            import anyio
+            from ecoscan.aws.dynamodb import ensure_table_exists
+            await anyio.to_thread.run_sync(ensure_table_exists)
+        except Exception as exc:
+            logger.warning("Verificacao da tabela DynamoDB na inicializacao: %s", exc)
+
         try:
             yield
         finally:
@@ -97,15 +105,25 @@ def create_app(
     @app.get("/audit/logs", tags=["audit"])
     async def get_audit_logs(limit: int = 50) -> dict[str, object]:
         """Retorna os logs de auditoria recentes armazenados no Amazon DynamoDB."""
+        from fastapi import HTTPException
         from ecoscan.aws.dynamodb import list_audit_logs
+        from ecoscan.settings import Settings
 
-        logs = await list_audit_logs(limit=limit)
-        return {
-            "source": "Amazon DynamoDB",
-            "table": getattr(Settings(), "DYNAMODB_TABLE_NAME", "ecoscan_audit_logs"),
-            "count": len(logs),
-            "logs": logs,
-        }
+        settings = Settings()
+        try:
+            logs = await list_audit_logs(limit=limit)
+            return {
+                "source": "Amazon DynamoDB",
+                "table": settings.DYNAMODB_TABLE_NAME,
+                "count": len(logs),
+                "logs": logs,
+            }
+        except Exception as exc:
+            logger.error(f"Erro ao consultar DynamoDB: {exc}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Erro ao acessar Amazon DynamoDB: {str(exc)}",
+            )
 
     return app
 
