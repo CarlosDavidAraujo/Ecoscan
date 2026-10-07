@@ -53,6 +53,15 @@ def create_thumbnail(image_bytes: bytes, max_size: tuple[int, int] = (300, 300))
         return output.getvalue()
 
 
+def get_s3_url(key: str) -> str:
+    """Retorna a URL pública formatada para um objeto no S3."""
+    region = _settings.AWS_REGION
+    bucket = _settings.AWS_S3_BUCKET_NAME or "bucket"
+    if region == "us-east-1":
+        return f"https://{bucket}.s3.amazonaws.com/{key}"
+    return f"https://{bucket}.s3.{region}.amazonaws.com/{key}"
+
+
 def upload_to_s3(
     file_bytes: bytes,
     key: str,
