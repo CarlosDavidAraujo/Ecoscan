@@ -16,6 +16,13 @@ else
     echo "Aviso: ecoscan/alembic.ini não encontrado, pulando migrações."
 fi
 
+if [ "$#" -gt 0 ]; then
+    echo "=========================================================="
+    echo "==> EcoScan: Executando comando customizado: $@"
+    echo "=========================================================="
+    exec "$@"
+fi
+
 echo "=========================================================="
 echo "==> EcoScan: Iniciando servidor FastAPI (Uvicorn)..."
 echo "=========================================================="

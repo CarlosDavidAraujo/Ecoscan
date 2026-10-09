@@ -2,6 +2,13 @@
 
 from ecoscan.aws.cache import delete_cache, get_cache, set_cache
 from ecoscan.aws.dynamodb import list_audit_logs, record_audit_log
+from ecoscan.aws.messaging import (
+    delete_queue_message,
+    get_sns_client,
+    get_sqs_client,
+    publish_image_processing_event,
+    receive_queue_messages,
+)
 from ecoscan.aws.s3 import create_thumbnail, delete_from_s3, get_s3_url, upload_to_s3
 
 __all__ = [
@@ -14,4 +21,9 @@ __all__ = [
     "delete_cache",
     "record_audit_log",
     "list_audit_logs",
+    "get_sns_client",
+    "get_sqs_client",
+    "publish_image_processing_event",
+    "receive_queue_messages",
+    "delete_queue_message",
 ]

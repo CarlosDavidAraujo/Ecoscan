@@ -2,17 +2,26 @@ from __future__ import annotations
 
 from typing import Annotated
 
+from datetime import datetime, timezone
+from uuid import UUID, uuid4
+
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.concurrency import run_in_threadpool
 
+from ecoscan.aws.cache import get_cache, set_cache
+from ecoscan.aws.dynamodb import record_audit_log
+from ecoscan.aws.messaging import publish_image_processing_event
+from ecoscan.aws.s3 import upload_to_s3
 from ecoscan.database import get_session
+from ecoscan.models import User
 from ecoscan.plant_classifier import (
     ClassificationError,
     InvalidImageError,
     PlantClassifier,
 )
+from ecoscan.security import get_current_user_optional
 
 
 MAX_IMAGE_BYTES = 10 * 1024 * 1024
@@ -140,6 +149,133 @@ async def identify_plant(
             status_code=500,
             detail="Nao foi possivel classificar a imagem.",
         ) from exc
+
+
+@router.post("/identify-async", status_code=202)
+async def identify_plant_async(
+    image: Annotated[
+        UploadFile,
+        File(description="Foto da planta para processamento desacoplado."),
+    ],
+    confidence_threshold: Annotated[
+        float,
+        Query(ge=0, le=1, description="Confianca minima para reconhecer."),
+    ] = 0.60,
+    add_to_library: Annotated[
+        bool,
+        Query(description="Adicionar automaticamente ao Meu Jardim quando concluído."),
+    ] = True,
+    current_user: Annotated[User | None, Depends(get_current_user_optional)] = None,
+) -> dict[str, object]:
+    """
+    Desacoplamento Assíncrono com SNS/SQS (Requisito 6 da AWS):
+    1. Salva a foto bruta no S3.
+    2. Publica evento no Amazon SNS (que encaminha para a fila SQS).
+    3. Responde instantaneamente (HTTP 202 Accepted) liberando o Webservice.
+    4. Um Worker desacoplado realiza o rescaling da imagem, executa a inferência YOLO11 e salva no RDS.
+    """
+    content_type = (image.content_type or "").lower()
+    if content_type and content_type not in ALLOWED_CONTENT_TYPES:
+        await image.close()
+        raise HTTPException(
+            status_code=415,
+            detail="Formato nao suportado. Envie JPG, PNG, WEBP, BMP ou TIFF.",
+        )
+
+    try:
+        image_bytes = await image.read(MAX_IMAGE_BYTES + 1)
+    finally:
+        await image.close()
+
+    if len(image_bytes) > MAX_IMAGE_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail="A imagem excede o limite de 10 MB.",
+        )
+
+    job_id = str(uuid4())
+    user_id = str(current_user.id) if current_user else f"guest_{uuid4()}"
+    s3_key = f"identifications/{user_id}/{job_id}_raw.jpg"
+
+    # 1. Envia a imagem original para o S3
+    upload_to_s3(image_bytes, s3_key, content_type=content_type)
+
+    # 2. Inicializa status do trabalho no Redis
+    initial_status = {
+        "job_id": job_id,
+        "status": "PENDING",
+        "user_id": user_id,
+        "s3_key": s3_key,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await set_cache(f"job:{job_id}", initial_status, ttl_seconds=3600)
+
+    # 3. Publica evento no Amazon SNS (encaminhado para o Amazon SQS)
+    message_id = publish_image_processing_event({
+        "job_id": job_id,
+        "user_id": user_id,
+        "s3_key": s3_key,
+        "content_type": content_type,
+        "confidence_threshold": confidence_threshold,
+        "add_to_library": add_to_library,
+    })
+
+    # 4. Registra auditoria no Amazon DynamoDB
+    await record_audit_log(
+        action="JOB_SUBMITTED_ASYNC",
+        user_id=user_id,
+        resource="sns_publisher",
+        details={
+            "job_id": job_id,
+            "s3_key": s3_key,
+            "sns_message_id": message_id,
+        },
+    )
+
+    return {
+        "job_id": job_id,
+        "status": "PENDING",
+        "poll_url": f"/plants/jobs/{job_id}",
+        "sns_message_id": message_id,
+        "message": "Imagem enfileirada no Amazon SNS/SQS com sucesso para processamento desacoplado.",
+    }
+
+
+@router.get("/jobs/{job_id}")
+async def get_job_status(
+    job_id: str,
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> dict[str, object]:
+    """Retorna o status atual de um trabalho desacoplado (PENDING, PROCESSING ou COMPLETED)."""
+    from sqlalchemy import select
+    from ecoscan.models import Identification
+
+    # 1. Consulta primeiro no ElastiCache Redis
+    cached = await get_cache(f"job:{job_id}")
+    if cached:
+        return cached
+
+    # 2. Fallback: consulta no Amazon RDS se o cache tiver expirado
+    try:
+        record_uuid = UUID(job_id)
+        record = await session.scalar(
+            select(Identification).where(Identification.id == record_uuid)
+        )
+        if record:
+            return {
+                "job_id": job_id,
+                "status": "COMPLETED",
+                "plant_name": record.plant_name,
+                "plant_slug": record.plant_slug,
+                "confidence": record.confidence,
+                "recognized": record.recognized,
+                "image_url": record.image_url,
+                "thumbnail_url": record.thumbnail_url,
+            }
+    except Exception:
+        pass
+
+    raise HTTPException(status_code=404, detail="Job de identificação não encontrado.")
 
 
 @router.get("/catalog")

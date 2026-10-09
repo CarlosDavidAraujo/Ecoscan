@@ -46,3 +46,8 @@ class Settings(BaseSettings):
     DYNAMODB_TABLE_NAME: str = "ecoscan_audit_logs"
     DYNAMODB_ENABLED: bool = True
     DYNAMODB_ENDPOINT_URL: str | None = None
+
+    # Configurações SNS e SQS (Desacoplamento e Mensageria)
+    AWS_SNS_TOPIC_ARN: str | None = "arn:aws:sns:us-east-1:847315253663:ecoscan-image-topic"
+    AWS_SQS_QUEUE_URL: str | None = "https://sqs.us-east-1.amazonaws.com/847315253663/ecoscan-image-queue"
+    MESSAGING_ENABLED: bool = True

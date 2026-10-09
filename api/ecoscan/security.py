@@ -108,3 +108,22 @@ async def get_current_user_from_refresh_token(
         token,
         expected_type="refresh",
     )
+
+
+oauth_scheme_optional = OAuth2PasswordBearer(
+    tokenUrl="/auth/token",
+    refreshUrl="/auth/refresh",
+    auto_error=False,
+)
+
+
+async def get_current_user_optional(
+    session: AsyncSession = Depends(get_session),
+    token: str | None = Depends(oauth_scheme_optional),
+) -> User | None:
+    if not token:
+        return None
+    try:
+        return await _get_user_from_token(session, token, expected_type="access")
+    except HTTPException:
+        return None
