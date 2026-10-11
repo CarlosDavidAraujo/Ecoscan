@@ -18,7 +18,7 @@ typedef CameraLoader = Future<List<CameraDescription>> Function();
 typedef PlantIdentifier =
     Future<PlantIdentification> Function(Uint8List imageBytes);
 
-const _localApiBaseUrl = 'http://54.160.216.51:5000';
+const _localApiBaseUrl = 'http://100.52.59.203:5000';
 
 abstract interface class TokenStorage {
   Future<String?> readAccessToken();
