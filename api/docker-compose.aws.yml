@@ -1,5 +1,6 @@
 services:
   api:
+    image: ecoscan_app:latest
     build:
       context: .
       dockerfile: ecoscan/Dockerfile
@@ -27,6 +28,7 @@ services:
       retries: 5
 
   worker:
+    image: ecoscan_app:latest
     build:
       context: .
       dockerfile: ecoscan/Dockerfile
