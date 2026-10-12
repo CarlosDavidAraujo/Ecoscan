@@ -18,7 +18,7 @@ typedef CameraLoader = Future<List<CameraDescription>> Function();
 typedef PlantIdentifier =
     Future<PlantIdentification> Function(Uint8List imageBytes);
 
-const _localApiBaseUrl = 'http://100.52.59.203:5000';
+const _localApiBaseUrl = 'http://alb-ecoscan-589144041.us-east-1.elb.amazonaws.com';
 
 abstract interface class TokenStorage {
   Future<String?> readAccessToken();
@@ -536,12 +536,12 @@ class EcoScanApiClient {
 
     if (lastNetworkError is TimeoutException) {
       throw const PlantIdentificationException(
-        'Tempo esgotado ao chamar a API. '
-        'Verifique se o adb reverse tcp:8000 tcp:8000 esta ativo.',
+        'Tempo esgotado ao chamar a API no Load Balancer. '
+        'Verifique sua conexao com a internet.',
       );
     }
     throw const PlantIdentificationException(
-      'Nao foi possivel conectar a API na porta 8000.',
+      'Nao foi possivel conectar a API no Load Balancer AWS.',
     );
   }
 

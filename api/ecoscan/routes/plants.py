@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Annotated
 
+import os
+import socket
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
@@ -65,6 +67,8 @@ class HealthResponse(BaseModel):
     model_file: str
     device: str
     detail: str | None = None
+    server_id: str | None = None
+    server_host: str | None = None
 
 
 def get_classifier(request: Request) -> PlantClassifier:
@@ -85,12 +89,15 @@ async def health(
     request: Request,
     classifier: ClassifierDependency,
 ) -> dict[str, object]:
+    hostname = socket.gethostname()
     return {
         "status": "ready" if classifier.ready else "unavailable",
         "model_loaded": classifier.ready,
         "model_file": classifier.model_path.name,
         "device": classifier.device,
         "detail": getattr(request.app.state, "plant_classifier_error", None),
+        "server_id": hostname,
+        "server_host": os.getenv("HOSTNAME", hostname),
     }
 
 

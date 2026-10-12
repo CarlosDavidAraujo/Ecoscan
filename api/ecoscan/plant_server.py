@@ -89,17 +89,33 @@ def create_app(
 
     @app.get("/", tags=["service"])
     async def root() -> dict[str, object]:
+        import socket
         return {
             "service": "EcoScan API",
+            "server_id": socket.gethostname(),
             "status": "ready",
             "users": "/users/",
             "authentication": "/auth/token",
             "health": "/plants/health",
+            "system_info": "/system/info",
             "identify": "/plants/identify",
             "history": "/history",
             "library": "/library",
             "audit_logs": "/audit/logs",
             "documentation": "/docs",
+        }
+
+    @app.get("/system/info", tags=["service"])
+    async def system_info() -> dict[str, object]:
+        """Informa os dados do servidor que esta atendendo a requisicao para comprovar o balanceamento de carga."""
+        import datetime
+        import socket
+        return {
+            "service": "EcoScan API",
+            "server_id": socket.gethostname(),
+            "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "load_balancer": "AWS Application Load Balancer (ALB)",
+            "message": "Tráfego distribuído pelo Application Load Balancer da AWS",
         }
 
     @app.get("/audit/logs", tags=["audit"])

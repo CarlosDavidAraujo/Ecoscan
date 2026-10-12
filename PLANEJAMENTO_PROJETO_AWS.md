@@ -310,14 +310,15 @@ gantt
 
 ## 7. Checklist Final de Entrega
 
-- [ ] **EC2:** Aplicação web e API rodando perfeitamente em instâncias EC2.
-- [ ] **RDS:** Dados estruturados no RDS PostgreSQL (sem binários pesados no banco).
-- [ ] **S3:** Imagens originais e thumbnails armazenadas em bucket S3.
-- [ ] **ElastiCache:** Redis ativo e acelerando consultas frequentes.
-- [ ] **DynamoDB:** Todas as ações do CRUD gerando logs com ação, dados e hora.
-- [ ] **SNS/SQS:** Processamento de imagens (rescaling + IA) 100% desacoplado via mensageria.
+- [x] **EC2:** Aplicação web e API rodando perfeitamente em instâncias EC2 (`100.52.59.203` e ASG).
+- [x] **RDS:** Dados estruturados no RDS PostgreSQL (sem binários pesados no banco).
+- [x] **S3:** Imagens originais e thumbnails armazenadas em bucket S3 (`amz-ecoscan-bucket`).
+- [x] **ElastiCache:** Redis ativo e acelerando consultas frequentes (Valkey-GLIDE TLS).
+- [x] **DynamoDB:** Todas as ações do CRUD gerando logs com ação, dados e hora (`ecoscan_audit_logs`).
+- [x] **SNS/SQS:** Processamento de imagens (rescaling + IA) 100% desacoplado via mensageria (`worker.py`).
 - [ ] **Interface Web:** Interface Web funcional, intuitiva e conectada à API.
-- [ ] **Load Balancer (ALB):** Distribuindo tráfego entre instâncias de forma transparente.
-- [ ] **Auto Scaling:** Escalando de 1 a 3 instâncias com base nas regras de CPU estabelecidas.
+- [x] **Load Balancer (ALB):** Distribuindo tráfego entre instâncias de forma transparente (`alb-ecoscan-589144041.us-east-1.elb.amazonaws.com`).
+- [x] **Auto Scaling:** Escalando de 1 a 3 instâncias com base nas regras de CPU estabelecidas (`asg-ecoscan`).
 - [ ] **Vídeo Demonstrativo:** Vídeo publicado no YouTube/Drive comprovando o Auto Scaling em funcionamento sob estresse.
-- [ ] **Código Fonte:** Repositório Git limpo ou arquivo `.zip` pronto para envio até 10/10/2026.
+- [ ] **Código Fonte:** Repositório Git limpo ou arquivo `.zip` pronto para envio.
+
